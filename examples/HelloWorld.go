@@ -7,7 +7,7 @@ package main
 import "C"
 
 import (
-	. "gocoa"
+	. "github.com/jkl1337/gocoa"
 	"unsafe"
 )
 

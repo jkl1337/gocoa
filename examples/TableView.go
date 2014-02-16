@@ -8,7 +8,7 @@ import "C"
 
 import (
 	"fmt"
-	. "gocoa"
+	. "github.com/jkl1337/gocoa"
 	"unsafe"
 )
 

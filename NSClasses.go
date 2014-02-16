@@ -1,8 +1,16 @@
 package gocoa
 
+/*
+#cgo CFLAGS: -I/System/Library/Frameworks/CoreFoundation.framework/Versions/A/Headers/
+#cgo LDFLAGS: -lobjc
+
+#include <CoreFoundation.h>
+*/
+import "C"
+
 import (
-	"C"
 	"unsafe"
+	"reflect"
 )
 
 func NSDictionary(key string, value Object) Object {
@@ -10,11 +18,28 @@ func NSDictionary(key string, value Object) Object {
 }
 
 func NSString(inString string) Object {
-	return ClassForName("NSString").Instance("stringWithUTF8String:", (charptr)(unsafe.Pointer(C.CString(inString))))
+	l := C.CFIndex(len(inString))
+	ret := C.CFStringCreateWithBytes(nil, *(**C.UInt8)(unsafe.Pointer(&inString)),
+		l, C.kCFStringEncodingUTF8, 0)
+	return Object(unsafe.Pointer(ret))
 }
 
 func NSStringToString(inString Object) string {
-	return C.GoString((*C.char)(unsafe.Pointer(inString.Call("UTF8String"))))
+	cr := C.CFStringRef(unsafe.Pointer(inString))
+
+	var usedBufLen C.CFIndex
+	rng := C.CFRange { C.CFIndex(0), C.CFStringGetLength(cr) }
+	n := int(C.CFStringGetBytes(cr, rng, C.kCFStringEncodingUTF8, 0, 0, nil, 0, &usedBufLen))
+	if n <= 0 { return "" }
+
+	buf := make([]byte, int(usedBufLen))
+	C.CFStringGetBytes(cr, rng, C.kCFStringEncodingUTF8, 0, 0, (*C.UInt8)(unsafe.Pointer(&buf[0])), C.CFIndex(len(buf)), &usedBufLen)
+
+	sh := &reflect.StringHeader{
+		Data: uintptr(unsafe.Pointer(&buf[0])),
+		Len: int(usedBufLen),
+	}
+	return *(*string)(unsafe.Pointer(sh))
 }
 
 const (
